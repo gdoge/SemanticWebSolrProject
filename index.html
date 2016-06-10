@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>IMDB search engile</title>
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height" />
+  </head>
+  <style>
+    /*... */
+    html, body{
+      background-color: #455A64; //#EFEFEF;
+      font-family: sans-serif;
+      box-sizing: border-box;
+    }
+    *, *::before, *::after{
+      box-sizing: inherit;
+    }
+
+    .searchbar{
+      display: block;
+      position: fixed;
+      left: 0; right: 0;
+      margin: 0 auto;
+      border: 0;
+      height: 48px;
+      width: calc(100% - 16px);
+      max-width: 820px;
+      border-radius: 2px;
+      padding: 0 16px;
+      font-size: 20px;
+      box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+      outline: none;
+    }
+    .results{
+      width: calc(100% - 16px);
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .imgsearch{
+      width: calc(100% - 16px);
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .result{
+      width: 100%;
+      background-color: #FFF;
+      border-radius: 2px;
+      padding: 16px;
+      margin-bottom: 8px;
+    }
+
+    .result h3{
+      padding: 0; margin: 0;
+      padding-bottom: 8px;
+    }
+
+    .result span{
+      padding: 4px 8px;
+      background-color: #CCC;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-block;
+      margin-bottom: 2px;
+      margin-right: 2px;
+    }
+
+    .nothing{
+      text-align: center;
+      opacity: 0.5;
+      color: white;
+    }
+
+    .hide{
+      display: none;
+    }
+
+  </style>
+  <body>
+
+    <input type="text" class="searchbar" placeholder="Write a movie or weapon..." onkeyup="search()" id="query"/>
+    <br /><br /><br />
+    <div class="imgsearch">
+      <a id="images" target="_blank" class="hide">Search for images</a>
+    </div><br />
+    <div class="results" id="results">
+          <!-- <div class="result">
+            <h3>Star Wars</h3>
+            <span onclick="replaceSearch('Weapon1')">Weapon1</span>
+            <span>Weapon2</span>
+            <span>Weapon3</span>
+          </div> -->
+    </div>
+    <div class="results nothing hide" id="nothing">
+       &#128299; There's no results for what you're looking for &#128299;
+    </div>
+
+  <script>
+  //...
+  var inputElement = document.getElementById("query");
+  var resultsElement = document.getElementById("results");
+  var nothingElement = document.getElementById("nothing");
+  var search = function(){
+    console.log(inputElement.value);
+    var q = inputElement.value;
+    if(!q){
+      resultsElement.innerHTML = "";
+      return;
+    }
+    var url = `http://localhost:8085/solr/imfdb/select?indent=on&q=*${q}*&wt=json`;
+    fetch(url)
+    .then(function(result){
+      return result.json();
+    })
+    .then(function(result){
+      //console.log(result.response.docs);
+      var docs = result.response.docs;
+      resultsElement.innerHTML = "";
+      docs.forEach(function(doc){
+        var div = document.createElement("DIV");
+        div.classList.add("result");
+        var title = document.createElement("H3");
+        title.innerHTML = doc.title[0];
+        div.appendChild(title);
+        doc.weapons.forEach(function(weapon, index){
+          var weaponSpan = document.createElement("SPAN");
+          weaponSpan.innerHTML = weapon+" ";
+          weaponSpan.addEventListener("click", function(){
+            replaceSearch(weapon);
+          });
+          div.appendChild(weaponSpan);
+          var imgLink = document.createElement("A");
+          imgLink.innerHTML = "IMG";
+          var weaponurl = encodeURI(weapon).replace(/&/g, "and");
+          imgLink.href=`https://www.google.com/search?site=&tbm=isch&source=hp&biw=1280&bih=572&q=${weaponurl}&oq=top+gun&gs_l=img.3..0l10.1860.2774.0.2986.7.7.0.0.0.0.79.509.7.7.0....0...1ac.1.64.img..0.7.504.iaDRSvC8huo`
+          imgLink.target="_blank";
+          imgLink.addEventListener("click", function(event){ event.stopPropagation() });
+          weaponSpan.appendChild(imgLink);
+        });
+        resultsElement.appendChild(div);
+      });
+
+      if(docs.length <= 0) nothingElement.classList.remove("hide");
+      else nothingElement.classList.add("hide");
+
+    })
+    .catch()
+  }
+
+  var replaceSearch = function(q){
+    inputElement.value = `"${q}"`;
+    search();
+  }
+  </script>
+  </body>
+</html>
